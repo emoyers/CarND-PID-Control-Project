@@ -1,6 +1,13 @@
 #ifndef PID_H
 #define PID_H
 
+#include <vector>
+#include <cmath>
+#include <iostream>
+#include <limits>
+
+using namespace std;
+
 class PID {
  public:
   /**
@@ -31,6 +38,12 @@ class PID {
    */
   double TotalError();
 
+
+  void Twiddle(double cte);
+
+  double count;
+  bool reach_cruise_speed;
+
  private:
   /**
    * PID Errors
@@ -45,6 +58,22 @@ class PID {
   double Kp;
   double Ki;
   double Kd;
+
+
+  double total_error;
+  double best_error;
+  bool error_initilialize;
+  bool new_best_error;
+
+  bool previous_add;
+  bool previous_sub;
+
+  std::vector<double> dp;
+  int index_dp;
+
+  void modify_pid_parameters(int index, double value);
 };
+
+
 
 #endif  // PID_H

@@ -5,9 +5,12 @@
 #include "json.hpp"
 #include "PID.h"
 
+#define stabilization_counts 300
 // for convenience
 using nlohmann::json;
 using std::string;
+
+static double use_twiddle = true;
 
 // For converting back and forth between radians and degrees.
 constexpr double pi() { return M_PI; }
@@ -33,12 +36,19 @@ string hasData(string s) {
 int main() {
   uWS::Hub h;
 
-  PID pid;
+  PID pid_steering;
   /**
-   * TODO: Initialize the pid variable.
-   */
+  * TODO: Initialize the pid variable.
+  */
 
-  h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, 
+  double Kp_init= 0.132022;
+  double Ki_init = 0.000713356;
+  double Kd_init = 1.8623;
+
+
+  pid_steering.Init(Kp_init, Ki_init, Kd_init);
+
+  h.onMessage([&pid_steering](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, 
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -63,16 +73,28 @@ int main() {
            * NOTE: Feel free to play around with the throttle and speed.
            *   Maybe use another PID controller to control the speed!
            */
-          
+          pid_steering.UpdateError(cte);
+
+
+          if(use_twiddle){
+            if(pid_steering.count>stabilization_counts || pid_steering.reach_cruise_speed){
+              pid_steering.Twiddle(cte);
+              
+            }
+            pid_steering.count += 1;
+          }
+
+          steer_value = pid_steering.TotalError();
+
           // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value 
-                    << std::endl;
+          /*std::cout << "CTE: " << cte << " Steering Value: " << steer_value 
+                    << std::endl;*/
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.3;
+          msgJson["throttle"] = 0.4;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          /*std::cout << msg << std::endl;*/
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }  // end "telemetry" if
       } else {
