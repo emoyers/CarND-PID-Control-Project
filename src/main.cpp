@@ -10,7 +10,7 @@
 using nlohmann::json;
 using std::string;
 
-static double use_twiddle = true;
+static double use_twiddle = false;
 
 // For converting back and forth between radians and degrees.
 constexpr double pi() { return M_PI; }
